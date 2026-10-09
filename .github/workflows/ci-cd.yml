@@ -1,0 +1,93 @@
+# =============================================================================
+# CI/CD-конвейер (GitHub Actions).
+#
+# CI:  тесты + сборка wheel-артефакта в контейнере + сохранение артефакта.
+# CD:  сборка docker-образа ИЗ артефакта, публикация в реестр (GHCR)
+#      и деплой на сервер по SSH (настраивается секретами, см. README).
+#
+# Локально те же шаги выполняют скрипты ci/build.sh и deploy/deploy.sh —
+# процесс одинаков для человека и для конвейера.
+# =============================================================================
+name: CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  # Проверки «задан ли секрет» вынесены в env: в if: шагов secrets недоступны
+  HAS_REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN != '' }}
+  HAS_DEPLOY_HOST: ${{ secrets.DEPLOY_HOST != '' }}
+
+jobs:
+  build:
+    name: "CI: тесты и сборка артефакта"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Тот же скрипт, что и локально: тесты в контейнере + wheel в artifacts/
+      - name: Тесты и сборка wheel-артефакта
+        run: bash ci/build.sh
+
+      # Артефакт сохраняется и передаётся в следующий джоб «с сохранением»
+      - name: Сохранить артефакт сборки
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-artifact
+          path: |
+            artifacts/*.whl
+            artifacts/LATEST
+            artifacts/build.info
+
+  deploy:
+    name: "CD: образ из артефакта и деплой"
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Скачать артефакт сборки
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel-artifact
+          path: artifacts
+
+      - name: Собрать docker-образ из артефакта
+        run: |
+          WHEEL="$(cat artifacts/LATEST)"
+          VERSION="$(printf '%s' "$WHEEL" | cut -d- -f2)"
+          # docker требует имя образа в нижнем регистре (репозиторий может
+          # называться «DevOps», а тег ghcr.io/.../DevOps — невалиден)
+          IMAGE="$(printf '%s/%s' "$REGISTRY" "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build \
+            --build-arg "WHEEL=artifacts/$WHEEL" \
+            --tag "notes-app:$VERSION" \
+            --tag "$IMAGE:$VERSION" .
+
+      # Для следующих шагов настройте секреты репозитория (Settings → Secrets):
+      #   REGISTRY_TOKEN                — токен GitHub (право write:packages)
+      #   DEPLOY_HOST, DEPLOY_USER,
+      #   DEPLOY_SSH_KEY, DEPLOY_PATH   — сервер и путь к docker-compose.yml
+      - name: Публикация образа в реестр (GHCR)
+        if: env.HAS_REGISTRY_TOKEN == 'true'
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "$REGISTRY" \
+            -u "${{ github.actor }}" --password-stdin
+          docker push "$IMAGE:$VERSION"
+
+      - name: Деплой на сервер по SSH
+        if: env.HAS_DEPLOY_HOST == 'true'
+        run: |
+          install -m 600 /dev/null ssh_key
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ssh_key
+          ssh -i ssh_key -o StrictHostKeyChecking=no \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && \
+             docker pull $IMAGE:$VERSION && \
+             APP_IMAGE=$IMAGE:$VERSION docker compose up -d"

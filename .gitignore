@@ -1,0 +1,16 @@
+# Сборочные артефакты (создаются ci/build.sh; сам файл .gitkeep — коммитим)
+artifacts/*
+!artifacts/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Локальные базы и IDE
+*.db
+.idea/
+.vscode/

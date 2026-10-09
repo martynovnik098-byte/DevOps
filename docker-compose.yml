@@ -1,0 +1,68 @@
+# =============================================================================
+# Полный стек: приложение + мониторинг (Prometheus, Grafana, cAdvisor).
+#
+# Образ приложения собирается deploy-скриптом ИЗ wheel-артефакта, поэтому
+# перед `docker compose up` нужно выполнить:
+#   bash ci/build.sh && bash deploy/deploy.sh        (Linux/macOS/WSL/GitBash)
+#   ci\build.bat && deploy\deploy.bat                (Windows cmd)
+# =============================================================================
+
+services:
+  app:
+    image: ${APP_IMAGE:-notes-app:1.0.0}
+    container_name: notes-app
+    ports:
+      - "8080:8080"                 # интерфейс приложения + /health + /metrics
+    volumes:
+      - app-data:/data              # SQLite в volume: данные переживают рестарт
+    environment:
+      DB_PATH: /data/notes.db
+    mem_limit: 256m                 # «доступные» ресурсы контейнера (для метрик)
+    cpus: 0.50
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: notes-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus  # история метрик тоже с сохранением
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: notes-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.51.0
+    container_name: notes-cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  prometheus-data:
+  grafana-data:

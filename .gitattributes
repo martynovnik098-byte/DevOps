@@ -1,0 +1,7 @@
+# Единые переводы строк: в репозитории — LF,
+# на Windows .bat-скрипты извлекаются с CRLF (иначе cmd может глючить).
+* text=auto
+*.sh  text eol=lf
+*.bat text eol=crlf
+*.whl binary
+*.png binary

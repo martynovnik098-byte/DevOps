@@ -1,0 +1,332 @@
+{
+  "uid": "devops-notes",
+  "title": "DevOps: приложение «Заметки» — мониторинг",
+  "description": "Метрики приложения (посещения, health, заметки) и ресурсы контейнеров/хоста (потребление и лимиты). Дашборд создаётся автоматически при старте Grafana.",
+  "tags": ["devops", "homework"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Посещения за последний час",
+      "description": "sum(increase(app_http_requests_total[1h])) — сколько HTTP-запросов пришло за час",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(increase(app_http_requests_total[1h]))",
+          "legendFormat": "посещения",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0 },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Health check",
+      "description": "up{job=\"app\"} — доступность приложения (его же проверяет Docker HEALTHCHECK)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "up{job=\"app\"}",
+          "legendFormat": "app",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red" },
+                "1": { "text": "UP", "color": "green" }
+              }
+            }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Заметок в базе",
+      "description": "app_notes_count — число заметок (данные хранятся в volume)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "app_notes_count",
+          "legendFormat": "заметки",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "RAM хоста (доступно)",
+      "description": "machine_memory_bytes (cAdvisor) — всего памяти на хосте",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "machine_memory_bytes",
+          "legendFormat": "RAM",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "CPU хоста (доступно)",
+      "description": "machine_cpu_cores (cAdvisor) — всего ядер на хосте",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "machine_cpu_cores",
+          "legendFormat": "ядра",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 1 }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Лимит RAM приложения",
+      "description": "container_spec_memory_limit_bytes — сколько памяти «доступно» контейнеру приложения (256m из docker-compose)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_spec_memory_limit_bytes{name=\"notes-app\"}",
+          "legendFormat": "лимит",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "auto"
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Посещаемость: запросы в секунду",
+      "description": "sum(rate(app_http_requests_total[5m]))",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(app_http_requests_total[5m]))",
+          "legendFormat": "запросов/с",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Память процесса приложения (потребляет)",
+      "description": "process_resident_memory_bytes — RSS памяти Python-процесса",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "process_resident_memory_bytes{job=\"app\"}",
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Память контейнеров: потребление vs лимит",
+      "description": "container_memory_usage_bytes (потребляемая) и container_spec_memory_limit_bytes (доступная) для всех контейнеров стека",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_memory_usage_bytes{name=~\"notes-.*\"}",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_spec_memory_limit_bytes{name=\"notes-app\"}",
+          "legendFormat": "лимит notes-app",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "лимит notes-app" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "dash": [10, 10], "fill": "dash" } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "CPU контейнеров: потребление vs лимит",
+      "description": "rate(container_cpu_usage_seconds_total[5m]) в ядрах и лимит приложения (cpus: 0.50 из docker-compose)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rate(container_cpu_usage_seconds_total{name=~\"notes-.*\", image!=\"\"}[5m])",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "container_spec_cpu_quota{name=\"notes-app\"} / container_spec_cpu_period{name=\"notes-app\"}",
+          "legendFormat": "лимит notes-app (ядер)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "лимит notes-app (ядер)" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "dash": [10, 10], "fill": "dash" } },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    }
+  ]
+}

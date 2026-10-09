@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Заметки — DevOps</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>📝 Заметки</h1>
+    <p>Домашняя работа по DevOps: приложение в контейнере, CI/CD и мониторинг</p>
+  </header>
+
+  <main class="container">
+    <form id="note-form" class="card form">
+      <input id="title" placeholder="Заголовок заметки" maxlength="120" required autocomplete="off">
+      <textarea id="text" placeholder="Текст (необязательно)" rows="3"></textarea>
+      <button type="submit" class="btn primary">Добавить</button>
+    </form>
+
+    <div id="toolbar">
+      <span id="counter">Заметок: 0</span>
+      <label class="filter">
+        <input type="checkbox" id="hide-done">
+        скрыть выполненные
+      </label>
+    </div>
+
+    <section id="notes" class="notes" aria-live="polite"></section>
+    <p id="empty" class="empty hidden">Пока пусто — добавьте первую заметку выше 👆</p>
+  </main>
+
+  <footer id="stats" class="footer"></footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Сбор метрик:
+#   app      — само приложение: посещения, число заметок, состояние процесса
+#   cadvisor — ресурсы контейнеров (CPU, память: потребление и лимиты)
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: app
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app:8080"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
