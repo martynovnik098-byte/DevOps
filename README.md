@@ -235,11 +235,11 @@ bash ci/build.sh && bash deploy/deploy.sh
   используйте `.bat`-версии (делают то же самое).
 - Если порты 3000/8080/8081/9090 заняты — поменяйте левую часть в
   `docker-compose.yml` (например, `"3001:3000"`).
-- **Важно для свежих Docker Desktop (4.34+):** если в настройках включён
-  «Use containerd for pulling and storing images» (по умолчанию он включён
-  в новых установках), cAdvisor не сможет собрать метрики отдельных
-  контейнеров (не умеет читать хранилище containerd). Отключите эту опцию:
-  Settings → General → снять галочку «Use containerd for pulling and storing
-  images» → Apply & Restart, затем выполните `deploy\deploy.bat` ещё раз.
-  Проверено: с классическим хранилищем (overlay2) все метрики контейнеров
-  собираются корректно.
+- **Важно для свежих Docker (Docker Desktop 4.34+ и Docker Engine 29+):** если
+  включено хранилище образов containerd (Settings → General → «Use containerd
+  for pulling and storing images» / `"features": {"containerd-snapshotter": true}`
+  в daemon.json), cAdvisor не сможет собрать метрики отдельных контейнеров —
+  он не умеет читать это хранилище. Отключите его (снять галочку / выставить
+  `false` в /etc/docker/daemon.json) и перезапустите Docker, затем выполните
+  `deploy/deploy.sh` ещё раз. Проверено: с классическим хранилищем (overlay2)
+  все метрики контейнеров собираются корректно.
