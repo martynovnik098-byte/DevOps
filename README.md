@@ -223,6 +223,11 @@ bash ci/build.sh && bash deploy/deploy.sh
    и `app/pyproject.toml`).
 2. Снова выполнить `bash ci/build.sh && bash deploy/deploy.sh` —
    поднимется новая версия артефакта и образа; данные в volume сохранятся.
+3. На сервере — те же команды после `git pull`:
+   ```bash
+   cd /opt/devops && git pull && bash ci/build.sh && bash deploy/deploy.sh
+   ```
+   Новая версия приложения поднимется на сервере, данные сохранятся.
 
 ## Технические заметки
 

@@ -23,8 +23,10 @@ async function reload() {
 
 function render() {
   const visible = hideDone ? notes.filter((n) => !n.done) : notes;
+  const done = notes.filter((n) => n.done).length;
   $("#counter").textContent =
-    `Заметок: ${visible.length}` + (hideDone ? ` (из ${notes.length})` : "");
+    `Заметок: ${visible.length}, выполнено: ${done}` +
+    (hideDone ? ` (показаны не все)` : "");
   $("#empty").classList.toggle("hidden", visible.length > 0);
   listEl.replaceChildren(...visible.map(noteCard));
 }
