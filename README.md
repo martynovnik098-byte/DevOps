@@ -154,7 +154,7 @@ deploy\deploy.bat
 | Ресурсы: потребляемые | `container_memory_usage_bytes`, `rate(container_cpu_usage_seconds_total[5m])`, `process_resident_memory_bytes` | «Память контейнеров», «CPU контейнеров», «Память процесса» |
 | Ресурсы: доступные | `container_spec_memory_limit_bytes`, `container_spec_cpu_quota/container_spec_cpu_period`, `machine_memory_bytes`, `machine_cpu_cores` | «Лимит RAM приложения» (пунктиром на графиках), «RAM/CPU хоста» |
 
-## Проверка «приложение не только запускается, но и редактируется»
+## Проверка работоспособности: данные редактируются и сохраняются
 
 1. Открыть http://localhost:8080.
 2. Добавить заметку (заголовок + текст → «Добавить»).
